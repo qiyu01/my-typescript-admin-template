@@ -12,8 +12,6 @@ Vue.use(Vuex)
 export interface IRootState {
   app: IAppState
   user: IUserState
-  tagsView: ITagsViewState
-  errorLog: IErrorLogState
   permission: IPermissionState
   settings: ISettingsState
 }

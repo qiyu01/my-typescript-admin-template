@@ -12,7 +12,7 @@
         <h3 class="title">
           {{ $t('login.title') }}
         </h3>
-        <lang-select class="set-language" />
+        <!-- <lang-select class="set-language" /> -->
       </div>
 
       <el-form-item prop="username">
@@ -21,7 +21,7 @@
         </span>
         <el-input
           ref="username"
-          v-model="loginForm.username"
+          v-model="loginForm.userAccount"
           :placeholder="$t('login.username')"
           name="username"
           type="text"
@@ -61,6 +61,23 @@
           </span>
         </el-form-item>
       </el-tooltip>
+
+      <div class="identification-box">
+            <el-form-item prop="identification" class="identification-form-item">
+              <el-input
+                v-model="loginForm.identification"
+                type="text"
+                name="text"
+                auto-complete="off"
+                placeholder="验证码"
+                maxlength="4"
+                @keyup.enter.native="handleLogin"
+              />
+            </el-form-item>
+            <el-form-item class="identification-graph">
+              <img :src="'/we-shop-mgmt/yxstore/admin/auth/captcha?t=' + tRandom" @click="changeGraph">
+            </el-form-item>
+      </div>
 
       <el-button
         :loading="loading"
@@ -110,42 +127,47 @@ import { Route } from 'vue-router'
 import { Dictionary } from 'vue-router/types/router'
 import { Form as ElForm, Input } from 'element-ui'
 import { UserModule } from '@/store/modules/user'
-import { isValidUsername } from '@/utils/validate'
-import LangSelect from '@/components/LangSelect/index.vue'
-import SocialSign from './components/SocialSignin.vue'
+// import { isValidUsername } from '@/utils/validate'
 
 @Component({
-  name: 'Login',
-  components: {
-    LangSelect,
-    SocialSign
-  }
+  name: 'Login'
 })
 export default class extends Vue {
   private validateUsername = (rule: any, value: string, callback: Function) => {
-    if (!isValidUsername(value)) {
-      callback(new Error('Please enter the correct user name'))
+    if (value.trim() === '') {
+      callback(new Error('请输入用户名'))
     } else {
       callback()
     }
   }
 
   private validatePassword = (rule: any, value: string, callback: Function) => {
-    if (value.length < 6) {
-      callback(new Error('The password can not be less than 6 digits'))
+    if (value.trim() === '') {
+      callback(new Error('请输入密码'))
+    } else {
+      callback()
+    }
+  }
+
+  private validateIdentification = (rule:any, value:string, callback:Function) => {
+    if (value.trim() === '') {
+      callback(new Error('请输入验证码'))
     } else {
       callback()
     }
   }
 
   private loginForm = {
-    username: 'admin',
-    password: '111111'
+    userAccount: 'maochao666',
+    password: 'maochao666666',
+    identification: '',
+    rememberMe: 'on'
   }
 
   private loginRules = {
-    username: [{ validator: this.validateUsername, trigger: 'blur' }],
-    password: [{ validator: this.validatePassword, trigger: 'blur' }]
+    userAccount: [{ validator: this.validateUsername, trigger: 'blur' }],
+    password: [{ validator: this.validatePassword, trigger: 'blur' }],
+    identification: [{ required: true, trigger: 'blur', validator: this.validateIdentification }]
   }
 
   private passwordType = 'password'
@@ -154,6 +176,7 @@ export default class extends Vue {
   private capsTooltip = false
   private redirect?: string
   private otherQuery: Dictionary<string> = {}
+  private tRandom = Math.random();
 
   @Watch('$route', { immediate: true })
   private onRouteChange(route: Route) {
@@ -167,7 +190,7 @@ export default class extends Vue {
   }
 
   mounted() {
-    if (this.loginForm.username === '') {
+    if (this.loginForm.userAccount === '') {
       (this.$refs.username as Input).focus()
     } else if (this.loginForm.password === '') {
       (this.$refs.password as Input).focus()
@@ -219,17 +242,24 @@ export default class extends Vue {
       return acc
     }, {} as Dictionary<string>)
   }
+
+  private changeGraph(): void {
+    // 修改验证码
+    this.tRandom = Math.random()
+  }
 }
 </script>
 
 <style lang="scss">
+@import "~@/styles/mixin.scss";
+@import "~@/styles/variables.scss";
 // References: https://www.zhangxinxu.com/wordpress/2018/01/css-caret-color-first-line/
-@supports (-webkit-mask: none) and (not (cater-color: $loginCursorColor)) {
-  .login-container .el-input {
-    input { color: $loginCursorColor; }
-    input::first-line { color: $lightGray; }
-  }
-}
+// @supports (-webkit-mask: none) and (not (cater-color: $loginCursorColor)) {
+//   .login-container .el-input {
+//     input { color: $loginCursorColor; }
+//     input::first-line { color: $lightGray; }
+//   }
+// }
 
 .login-container {
   .el-input {
@@ -244,13 +274,13 @@ export default class extends Vue {
       border-radius: 0px;
       padding: 12px 5px 12px 15px;
       color: $lightGray;
-      caret-color: $loginCursorColor;
+      // caret-color: $loginCursorColor;
       -webkit-appearance: none;
 
-      &:-webkit-autofill {
-        box-shadow: 0 0 0px 1000px $loginBg inset !important;
-        -webkit-text-fill-color: #fff !important;
-      }
+      // &:-webkit-autofill {
+      //   box-shadow: 0 0 0px 1000px $loginBg inset !important;
+      //   -webkit-text-fill-color: #fff !important;
+      // }
     }
   }
 
@@ -260,6 +290,25 @@ export default class extends Vue {
     border-radius: 5px;
     color: #454545;
   }
+  .identification-box{
+        display: flex;
+        justify-content: space-between;
+        .identification-form-item{
+          width: 200px;
+          height: 47px;
+        }
+
+        .identification-graph{
+          width: 220px;
+          height: 47px;
+
+        img{
+            width: 100%;
+            height: 45px;
+        }
+    }
+  }
+
 }
 </style>
 
@@ -268,7 +317,7 @@ export default class extends Vue {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: $loginBg;
+  // background-color: $loginBg;
 
   .login-form {
     position: relative;
@@ -293,7 +342,7 @@ export default class extends Vue {
 
   .svg-container {
     padding: 6px 5px 6px 15px;
-    color: $darkGray;
+    // color: $darkGray;
     vertical-align: middle;
     width: 30px;
     display: inline-block;
@@ -304,7 +353,7 @@ export default class extends Vue {
 
     .title {
       font-size: 26px;
-      color: $lightGray;
+      // color: $lightGray;
       margin: 0px auto 40px auto;
       text-align: center;
       font-weight: bold;
@@ -325,7 +374,7 @@ export default class extends Vue {
     right: 10px;
     top: 7px;
     font-size: 16px;
-    color: $darkGray;
+    // color: $darkGray;
     cursor: pointer;
     user-select: none;
   }

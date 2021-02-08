@@ -1,4 +1,4 @@
-interface ISettings {
+ export interface ISettings {
   title: string // Overrides the default title
   showSettings: boolean // Controls settings panel display
   showTagsView: boolean // Controls tagsview display
@@ -10,8 +10,8 @@ interface ISettings {
   mockServerPort: number // Port number for mock server
 }
 
-// You can customize below settings :)
-const settings: ISettings = {
+// // You can customize below settings :)
+export const defaultSettings: ISettings = {
   title: 'Vue Typescript Admin',
   showSettings: true,
   showTagsView: true,
@@ -23,4 +23,24 @@ const settings: ISettings = {
   mockServerPort: 9528
 }
 
+// export default settings
+
+const settings = {
+
+  title: '邻药优选后台',
+
+  /**
+   * @type {boolean} true | false
+   * @description Whether fix the header
+   */
+  fixedHeader: false,
+
+  /**
+   * @type {boolean} true | false
+   * @description Whether show the logo in sidebar
+   */
+  sidebarLogo: false
+}
+
 export default settings
+

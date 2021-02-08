@@ -2,8 +2,10 @@ import Vue, { DirectiveOptions } from 'vue'
 
 import 'normalize.css'
 import ElementUI from 'element-ui'
+import '@/styles/element-theme/index.css'
 import SvgIcon from 'vue-svgicon'
 
+// import '@/styles/element-variables.scss'
 import '@/styles/element-variables.scss'
 import '@/styles/index.scss'
 
@@ -14,7 +16,6 @@ import router from '@/router'
 import i18n from '@/lang'
 import '@/icons/components'
 import '@/permission'
-import '@/utils/error-log'
 import '@/pwa/register-service-worker'
 import * as directives from '@/directives'
 import * as filters from '@/filters'

@@ -23,6 +23,7 @@ module.exports = {
           delimiter: 'comma'
         }
       }],
+    '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-var-requires': 'off',
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',

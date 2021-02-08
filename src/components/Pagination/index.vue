@@ -1,12 +1,9 @@
 <template>
-  <div
-    :class="{'hidden': hidden}"
-    class="pagination-container"
-  >
+  <div v-if="total>0" class="pagination-container">
     <el-pagination
       :background="background"
-      :current-page.sync="currentPage"
-      :page-size.sync="pageSize"
+      :current-page.sync="currPage"
+      :page-size.sync="currPageSize"
       :layout="layout"
       :page-sizes="pageSizes"
       :total="total"
@@ -17,62 +14,96 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator'
-import { scrollTo } from '@/utils/scroll-to'
+<script>
+import { scrollTo } from '@/utils/scrollTo'
 
-@Component({
-  name: 'Pagination'
-})
-export default class extends Vue {
-  @Prop({ required: true }) private total!: number
-  @Prop({ default: 1 }) private page!: number
-  @Prop({ default: 20 }) private limit!: number
-  @Prop({ default: () => [10, 20, 30, 50] }) private pageSizes!: number[]
-  @Prop({ default: 'total, sizes, prev, pager, next, jumper' }) private layout!: string
-  @Prop({ default: true }) private background!: boolean
-  @Prop({ default: true }) private autoScroll!: boolean
-  @Prop({ default: false }) private hidden!: boolean
-
-  get currentPage() {
-    return this.page
-  }
-
-  set currentPage(value) {
-    this.$emit('update:page', value)
-  }
-
-  get pageSize() {
-    return this.limit
-  }
-
-  set pageSize(value) {
-    this.$emit('update:limit', value)
-  }
-
-  handleSizeChange(value: number) {
-    this.$emit('pagination', { page: this.currentPage, limit: value })
-    if (this.autoScroll) {
-      scrollTo(0, 800)
+export default {
+  name: 'Pagination',
+  props: {
+    total: {
+      required: true,
+      type: Number
+    },
+    page: {
+      type: Number,
+      default: 1
+    },
+    pageSize: {
+      type: Number,
+      default: 10
+    },
+    pageSizes: {
+      type: Array,
+      default() {
+        return [10, 20, 50, 100]
+      }
+    },
+    layout: {
+      type: String,
+      // default: 'total, sizes, prev, pager, next, jumper'
+      default: 'total, prev, pager, next,sizes, jumper'
+    },
+    background: {
+      type: Boolean,
+      default: true
+    },
+    autoScroll: {
+      type: Boolean,
+      default: false
     }
-  }
-
-  handleCurrentChange(value: number) {
-    this.$emit('pagination', { page: value, limit: this.pageSize })
-    if (this.autoScroll) {
-      scrollTo(0, 800)
+  },
+  computed: {
+    currPage: {
+      get() {
+        return this.page
+      },
+      set(val) {
+        this.$emit('update:page', val)
+      }
+    },
+    currPageSize: {
+      get() {
+        return this.pageSize
+      },
+      set(val) {
+        this.$emit('update:pageSize', val)
+      }
+    }
+  },
+  methods: {
+    handleSizeChange(val) {
+      this.currPageSize = val // 强制设置pageSize
+      this.$emit('update:page', 1)
+      this.$emit('pagination', { page: 1, pageSize: val })
+      if (this.autoScroll) {
+        scrollTo(0, 800)
+      }
+    },
+    handleCurrentChange(val) {
+      this.$emit('pagination', { page: val, pageSize: this.pageSize })
+      if (this.autoScroll) {
+        scrollTo(0, 800)
+      }
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
+<style rel="stylesheet/scss" lang="scss">
 .pagination-container {
-  background: #fff;
-  padding: 32px 16px;
+  padding: 32px 0;
+  text-align: right;
+}
+
+.el-pagination__total,
+.el-pagination__sizes {
+  // float: left;
 }
 
 .pagination-container.hidden {
   display: none;
+}
+.el-pagination.is-background .btn-next, .el-pagination.is-background .btn-prev, .el-pagination.is-background .el-pager li{
+  background-color: #fff;
 }
 </style>

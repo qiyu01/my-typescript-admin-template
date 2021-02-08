@@ -1,117 +1,82 @@
 <template>
-  <div
-    v-if="!item.meta || !item.meta.hidden"
-    :class="[isCollapse ? 'simple-mode' : 'full-mode', {'first-level': isFirstLevel}]"
-  >
-    <template v-if="!alwaysShowRootMenu && theOnlyOneChild && !theOnlyOneChild.children">
-      <sidebar-item-link
-        v-if="theOnlyOneChild.meta"
-        :to="resolvePath(theOnlyOneChild.path)"
-      >
+  <div v-if="!item.hidden" class="menu-wrapper">
+    <template v-if="hasOneShowingChild(item.children,item) && (!onlyOneChild.children||onlyOneChild.noShowingChildren)&&!item.alwaysShow">
+      <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path)">
         <el-menu-item
-          :index="resolvePath(theOnlyOneChild.path)"
-          :class="{'submenu-title-noDropdown': isFirstLevel}"
+          :index="resolvePath(onlyOneChild.path)"
+          :class="{
+            'submenu-title-noDropdown': !isNest,
+            'submenu-title-common': item.name!=='Index'
+          }"
         >
-          <svg-icon
-            v-if="theOnlyOneChild.meta.icon"
-            :name="theOnlyOneChild.meta.icon"
-          />
-          <span
-            v-if="theOnlyOneChild.meta.title"
-            slot="title"
-          >{{ $t('route.' + theOnlyOneChild.meta.title) }}</span>
+          <item :icon="onlyOneChild.meta.icon||(item.meta&&item.meta.icon)" :title="onlyOneChild.meta.title" />
         </el-menu-item>
-      </sidebar-item-link>
+      </app-link>
     </template>
-    <el-submenu
-      v-else
-      :index="resolvePath(item.path)"
-      popper-append-to-body
-    >
+
+    <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
       <template slot="title">
-        <svg-icon
-          v-if="item.meta && item.meta.icon"
-          :name="item.meta.icon"
-        />
-        <span
-          v-if="item.meta && item.meta.title"
-          slot="title"
-        >{{ $t('route.' + item.meta.title) }}</span>
+        <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
-      <template v-if="item.children">
-        <sidebar-item
-          v-for="child in item.children"
-          :key="child.path"
-          :item="child"
-          :is-collapse="isCollapse"
-          :is-first-level="false"
-          :base-path="resolvePath(child.path)"
-          class="nest-menu"
-        />
-      </template>
+      <sidebar-item
+        v-for="child in item.children"
+        :key="child.path"
+        :is-nest="true"
+        :item="child"
+        :base-path="resolvePath(child.path)"
+        class="nest-menu"
+      />
     </el-submenu>
   </div>
 </template>
 
 <script lang="ts">
-import path from 'path'
-import { Component, Prop, Vue } from 'vue-property-decorator'
-import { RouteConfig } from 'vue-router'
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator'
+import { mixins } from 'vue-class-component'
+
+import FixiOSBug from './FixiOSBug'
 import { isExternal } from '@/utils/validate'
-import SidebarItemLink from './SidebarItemLink.vue'
+import Item from './Item.vue'
+import AppLink from './Link.vue'
+import path from 'path'
 
 @Component({
-  // Set 'name' here to prevent uglifyjs from causing recursive component not work
-  // See https://medium.com/haiiro-io/element-component-name-with-vue-class-component-f3b435656561 for detail
   name: 'SidebarItem',
-  components: {
-    SidebarItemLink
-  }
+  components: { Item, AppLink }
 })
-export default class extends Vue {
-  @Prop({ required: true }) private item!: RouteConfig
-  @Prop({ default: false }) private isCollapse!: boolean
-  @Prop({ default: true }) private isFirstLevel!: boolean
-  @Prop({ default: '' }) private basePath!: string
+export default class extends mixins(FixiOSBug) {
+  @Prop({ default: () => {} }) private item!: Object;
+  @Prop({ default: () => {} }) private isNest!: Object;
+  @Prop() private basePath!: string;
 
-  get alwaysShowRootMenu() {
-    if (this.item.meta && this.item.meta.alwaysShow) {
+  private onlyOneChild:any
+
+  private hasOneShowingChild(children = [], parent:any) {
+    const showingChildren = children.filter((item:any) => {
+      if (item.meta.hidden) {
+        return false
+      } else {
+        // Temp set(will be used if only has one showing child)
+        this.onlyOneChild = item
+        return true
+      }
+    })
+
+    // When there is only one child router, the child router is displayed by default
+    if (showingChildren.length === 1 && parent.name === 'Index') {
       return true
     }
+
+    // Show parent if there are no child router to display
+    if (showingChildren.length === 0) {
+      this.onlyOneChild = { ...parent, path: '', noShowingChildren: true }
+      return true
+    }
+
     return false
   }
 
-  get showingChildNumber() {
-    if (this.item.children) {
-      const showingChildren = this.item.children.filter((item) => {
-        if (item.meta && item.meta.hidden) {
-          return false
-        } else {
-          return true
-        }
-      })
-      return showingChildren.length
-    }
-    return 0
-  }
-
-  get theOnlyOneChild() {
-    if (this.showingChildNumber > 1) {
-      return null
-    }
-    if (this.item.children) {
-      for (const child of this.item.children) {
-        if (!child.meta || !child.meta.hidden) {
-          return child
-        }
-      }
-    }
-    // If there is no children, return itself with path removed,
-    // because this.basePath already conatins item's path information
-    return { ...this.item, path: '' }
-  }
-
-  private resolvePath(routePath: string) {
+  private resolvePath(routePath:any) {
     if (isExternal(routePath)) {
       return routePath
     }
@@ -124,60 +89,24 @@ export default class extends Vue {
 </script>
 
 <style lang="scss">
-.el-submenu.is-active > .el-submenu__title {
-  color: $subMenuActiveText !important;
-}
-
-.full-mode {
-  .nest-menu .el-submenu>.el-submenu__title,
-  .el-submenu .el-menu-item {
-    min-width: $sideBarWidth !important;
-    background-color: $subMenuBg !important;
-
-    &:hover {
-      background-color: $subMenuHover !important;
-    }
-  }
-}
-
-.simple-mode {
-  &.first-level {
-    .submenu-title-noDropdown {
-      padding: 0 !important;
-      position: relative;
-
-      .el-tooltip {
-        padding: 0 !important;
+.menu-wrapper{
+.el-menu-item{
+&:hover{
+        background-color: rgba(248, 83, 64, 0.12)!important;
       }
-    }
-
-    .el-submenu {
-      overflow: hidden;
-
-      &>.el-submenu__title {
-        padding: 0px !important;
-
-        .el-submenu__icon-arrow {
-          display: none;
-        }
-
-        &>span {
-          visibility: hidden;
-        }
-      }
-    }
-  }
-}
-</style>
-
-<style lang="scss" scoped>
-.svg-icon {
-  margin-right: 16px;
+&.is-active{
+border-right: 4px solid#f85340;}
 }
 
-.simple-mode {
-  .svg-icon {
-    margin-left: 20px;
+.el-submenu{
+.el-submenu__title{
+&:hover{
+          background-color: rgba(248, 83, 64, 0.12)!important;
+}
+}
+}
+.submenu-title-common{
+  padding-left: 48px!important;
   }
 }
 </style>
